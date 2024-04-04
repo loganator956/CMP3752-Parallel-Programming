@@ -82,14 +82,20 @@ int main(int argc, char** argv) {
 		queue.enqueueWriteBuffer(buffer_B, CL_TRUE, 0, vector_size, &B[0]);
 
 		//4.2 Setup and execute the kernel (i.e. device code)
-		cl::Kernel kernel_add = cl::Kernel(program, "mult"); // cahngee the code ran here
+		cl::Kernel kernel_add = cl::Kernel(program, "add"); // cahngee the code ran here
 		kernel_add.setArg(0, buffer_A);
 		kernel_add.setArg(1, buffer_B);
 		kernel_add.setArg(2, buffer_C);
 
+		cl::Kernel kernel_mult = cl::Kernel(program, "mult");
+		kernel_mult.setArg(0, buffer_C);
+		kernel_mult.setArg(1, buffer_B);
+		kernel_mult.setArg(2, buffer_C);
+
 		cl::Event profile_event;
 
 		queue.enqueueNDRangeKernel(kernel_add, cl::NullRange, cl::NDRange(vector_elements), cl::NullRange, NULL, &profile_event);
+		queue.enqueueNDRangeKernel(kernel_mult, cl::NullRange, cl::NDRange(vector_elements), cl::NullRange, NULL, &profile_event);
 
 		//4.3 Copy the result from device to host
 		queue.enqueueReadBuffer(buffer_C, CL_TRUE, 0, vector_size, &C[0]);
