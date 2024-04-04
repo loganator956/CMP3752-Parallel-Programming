@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
 		std::cout << "Running on " << GetPlatformName(platform_id) << ", " << GetDeviceName(platform_id, device_id) << std::endl;
 
 		//create a queue to which we will push commands for the device
-		cl::CommandQueue queue(context);
+		cl::CommandQueue queue(context, CL_QUEUE_PROFILING_ENABLE);
 
 		//2.2 Load & build the device code
 		cl::Program::Sources sources;
@@ -61,6 +61,9 @@ int main(int argc, char** argv) {
 		std::vector<int> A = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }; //C++11 allows this type of initialisation
 		std::vector<int> B = { 0, 1, 2, 0, 1, 2, 0, 1, 2, 0 };
 
+		//std::vector<int> A(1000000);
+		//std::vector<int> B(1000000);
+
 		size_t vector_elements = A.size();//number of elements
 		size_t vector_size = A.size() * sizeof(int);//size in bytes
 
@@ -79,12 +82,14 @@ int main(int argc, char** argv) {
 		queue.enqueueWriteBuffer(buffer_B, CL_TRUE, 0, vector_size, &B[0]);
 
 		//4.2 Setup and execute the kernel (i.e. device code)
-		cl::Kernel kernel_add = cl::Kernel(program, "add");
+		cl::Kernel kernel_add = cl::Kernel(program, "mult"); // cahngee the code ran here
 		kernel_add.setArg(0, buffer_A);
 		kernel_add.setArg(1, buffer_B);
 		kernel_add.setArg(2, buffer_C);
 
-		queue.enqueueNDRangeKernel(kernel_add, cl::NullRange, cl::NDRange(vector_elements), cl::NullRange);
+		cl::Event profile_event;
+
+		queue.enqueueNDRangeKernel(kernel_add, cl::NullRange, cl::NDRange(vector_elements), cl::NullRange, NULL, &profile_event);
 
 		//4.3 Copy the result from device to host
 		queue.enqueueReadBuffer(buffer_C, CL_TRUE, 0, vector_size, &C[0]);
@@ -92,6 +97,9 @@ int main(int argc, char** argv) {
 		std::cout << "A = " << A << std::endl;
 		std::cout << "B = " << B << std::endl;
 		std::cout << "C = " << C << std::endl;
+
+		std::cout << "Kernel execution time [ns]: " << profile_event.getProfilingInfo<CL_PROFILING_COMMAND_END>() - profile_event.getProfilingInfo<CL_PROFILING_COMMAND_START>() << std::endl;
+		std::cout << GetFullProfilingInfo(profile_event, ProfilingResolution::PROF_US) << std::endl;
 	}
 	catch (cl::Error err) {
 		std::cerr << "ERROR: " << err.what() << ", " << getErrorString(err.err()) << std::endl;

@@ -1,0 +1,53 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\logan\\source\\repos\\CMP3752-Parallel-Programming\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{0F94CDBF-1CAA-4A30-8517-489F510AEB06}|Tutorial 1\\Tutorial 1.vcxproj|C:\\Users\\logan\\source\\repos\\CMP3752-Parallel-Programming\\Tutorial 1\\Tutorial 1.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{0F94CDBF-1CAA-4A30-8517-489F510AEB06}|Tutorial 1\\Tutorial 1.vcxproj|solutionrelative:Tutorial 1\\Tutorial 1.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0F94CDBF-1CAA-4A30-8517-489F510AEB06}|Tutorial 1\\Tutorial 1.vcxproj|C:\\Users\\logan\\source\\repos\\CMP3752-Parallel-Programming\\Tutorial 1\\kernels\\kernels.cl||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{0F94CDBF-1CAA-4A30-8517-489F510AEB06}|Tutorial 1\\Tutorial 1.vcxproj|solutionrelative:Tutorial 1\\kernels\\kernels.cl||{8B382828-6202-11D1-8870-0000F87579D2}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "kernels.cl",
+              "DocumentMoniker": "C:\\Users\\logan\\source\\repos\\CMP3752-Parallel-Programming\\Tutorial 1\\kernels\\kernels.cl",
+              "RelativeDocumentMoniker": "Tutorial 1\\kernels\\kernels.cl",
+              "ToolTip": "C:\\Users\\logan\\source\\repos\\CMP3752-Parallel-Programming\\Tutorial 1\\kernels\\kernels.cl",
+              "RelativeToolTip": "Tutorial 1\\kernels\\kernels.cl",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAcAAAAPAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2024-04-02T15:07:47.233Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Tutorial 1.cpp",
+              "DocumentMoniker": "C:\\Users\\logan\\source\\repos\\CMP3752-Parallel-Programming\\Tutorial 1\\Tutorial 1.cpp",
+              "RelativeDocumentMoniker": "Tutorial 1\\Tutorial 1.cpp",
+              "ToolTip": "C:\\Users\\logan\\source\\repos\\CMP3752-Parallel-Programming\\Tutorial 1\\Tutorial 1.cpp",
+              "RelativeToolTip": "Tutorial 1\\Tutorial 1.cpp",
+              "ViewState": "AQIAAEcAAAAAAAAAAAD4v1QAAAA/AAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2024-04-02T12:40:57.84Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
