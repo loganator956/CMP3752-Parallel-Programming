@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
 
 		//Part 3 - memory allocation
 		//host - input
-		std::vector<int> A = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }; //C++11 allows this type of initialisation
+		std::vector<int> A = {5980, 1, 2, 3, 4, 5, 6, 7, 8, 9 }; //C++11 allows this type of initialisation
 		std::vector<int> B = { 0, 1, 2, 0, 1, 2, 0, 1, 2, 0 };
 
 		//std::vector<int> A(1000000);
@@ -92,10 +92,25 @@ int main(int argc, char** argv) {
 		kernel_mult.setArg(1, buffer_B);
 		kernel_mult.setArg(2, buffer_C);
 
+		cl::Kernel kernel_avg = cl::Kernel(program, "avg_filter");
+		kernel_avg.setArg(0, buffer_A);
+		kernel_avg.setArg(1, buffer_C);
+
+		cl::Kernel kernel_2dadd = cl::Kernel(program, "add2D");
+		kernel_2dadd.setArg(0, buffer_A);
+		kernel_2dadd.setArg(1, buffer_B);
+		kernel_2dadd.setArg(2, buffer_C);
+
 		cl::Event profile_event;
 
-		queue.enqueueNDRangeKernel(kernel_add, cl::NullRange, cl::NDRange(vector_elements), cl::NullRange, NULL, &profile_event);
-		queue.enqueueNDRangeKernel(kernel_mult, cl::NullRange, cl::NDRange(vector_elements), cl::NullRange, NULL, &profile_event);
+		// tut 2; set custom work group size
+		cl::Device device = context.getInfo<CL_CONTEXT_DEVICES>()[0];
+
+
+		//queue.enqueueNDRangeKernel(kernel_add, cl::NullRange, cl::NDRange(vector_elements),cl::NullRange, NULL, &profile_event);
+		//queue.enqueueNDRangeKernel(kernel_mult, cl::NullRange, cl::NDRange(vector_elements), cl::NullRange, NULL, &profile_event);
+		//queue.enqueueNDRangeKernel(kernel_avg, cl::NullRange, cl::NDRange(vector_elements), cl::NullRange, NULL, &profile_event);
+		queue.enqueueNDRangeKernel(kernel_2dadd, cl::NullRange, cl::NDRange(5, 2), cl::NullRange, NULL, &profile_event);
 
 		//4.3 Copy the result from device to host
 		queue.enqueueReadBuffer(buffer_C, CL_TRUE, 0, vector_size, &C[0]);

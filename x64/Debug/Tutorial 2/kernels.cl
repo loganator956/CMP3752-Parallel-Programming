@@ -10,7 +10,30 @@ kernel void filter_r(global const uchar* A, global uchar* B) {
 	int colour_channel = id / image_size; // 0 - red, 1 - green, 2 - blue
 
 	//this is just a copy operation, modify to filter out the individual colour channels
-	B[id] = A[id];
+	if (colour_channel == 0) {
+		B[id] = A[id];
+	}
+	else {
+		B[id] = 0;
+	}
+}
+
+kernel void invert(global const uchar* A, global uchar* B) {
+	int id = get_global_id(0);
+	int image_size = get_global_size(0)/3;
+	int colour_channel = id / image_size;
+	B[id] = 255 - A[id];
+}
+
+kernel void rgb2grey(global const uchar* A, global uchar* B) {
+	int id = get_global_id(0);
+	int image_size = get_global_size(0)/3;
+	int colour_channel = id / image_size;
+	// Y  = 0.2126R + 0.7152G + 0.0722B
+	if (colour_channel == 0) {
+		int y = (A[id] * 0.2126) + (A[id+1] * 0.7152) + (A[id+2] * 0.0722);
+		B[id] = B[id + image_size] = B[id + image_size * 2]=y;
+	}
 }
 
 //simple ND identity kernel
@@ -44,15 +67,17 @@ kernel void avg_filterND(global const uchar* A, global uchar* B) {
 
 	uint result = 0;
 
+	int range = 1;
+
 	//simple boundary handling - just copy the original pixel
 	if ((x == 0) || (x == width-1) || (y == 0) || (y == height-1)) {
 		result = A[id];	
 	} else {
-		for (int i = (x-1); i <= (x+1); i++)
-		for (int j = (y-1); j <= (y+1); j++) 
+		for (int i = (x-range); i <= (x+range); i++)
+		for (int j = (y-range); j <= (y+range); j++) 
 			result += A[i + j*width + c*image_size];
 
-		result /= 9;
+		result /= ((range * 2) + 1) * ((range * 2) + 1);
 	}
 
 	B[id] = (uchar)result;
