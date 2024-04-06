@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
 		queue.enqueueFillBuffer(buffer_B, 0, 0, output_size);//zero B buffer on device memory
 
 		//4.2 Setup and execute all kernels (i.e. device code)
-		cl::Kernel kernel_1 = cl::Kernel(program, "hist_simple");
+		cl::Kernel kernel_1 = cl::Kernel(program, "scan_hs");
 		kernel_1.setArg(0, buffer_A);
 		kernel_1.setArg(1, buffer_B);
 		//kernel_1.setArg(2, cl::Local(local_size*sizeof(mytype)));//local memory size

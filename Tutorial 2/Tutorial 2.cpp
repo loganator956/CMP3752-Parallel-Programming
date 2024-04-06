@@ -74,10 +74,13 @@ int main(int argc, char** argv) {
 
 		std::vector<int> intensity_histogram(256 * image_input.spectrum(), 0);
 		std::vector<int> cumulative_histogram(256 * image_input.spectrum(), 0);
+		std::vector<int> normalised_histogram(256 * image_input.spectrum(), 0);
+		std::vector<int> max_hist(256 * image_input.spectrum(), 0);
 
 		//device - buffers
 		cl::Buffer dev_intensity_histogram(context, CL_MEM_READ_WRITE, intensity_histogram.size() * sizeof(int));
 		cl::Buffer dev_cumulative_histogram(context, CL_MEM_READ_WRITE, cumulative_histogram.size() * sizeof(int));
+		cl::Buffer dev_max_histogram(context, CL_MEM_READ_WRITE, max_hist.size() * sizeof(int));
 
 		cl::Buffer dev_image_input(context, CL_MEM_READ_ONLY, image_input.size());
 		cl::Buffer dev_image_output(context, CL_MEM_READ_WRITE, image_input.size()); //should be the same as input image
@@ -103,26 +106,44 @@ int main(int argc, char** argv) {
 		queue.enqueueNDRangeKernel(ihistKernel, cl::NullRange, cl::NDRange(image_input.width(), image_input.height(), image_input.spectrum()), cl::NullRange);
 
 		queue.enqueueReadBuffer(dev_intensity_histogram, CL_TRUE, 0, intensity_histogram.size() * sizeof(int), &intensity_histogram[0]);
+		std::cout << intensity_histogram << std::endl;
 
 		// Calculate the cumulative histogram. 
-		// use hillis steele scan method as that stores the partial data. As data and processing requirements are much lower (256 per colour channel (max 3),
-		// no need to use blelloch's method.
+		// use hillis steele scan method as that stores the partial data.
 		queue.enqueueWriteBuffer(dev_intensity_histogram, CL_TRUE, 0, intensity_histogram.size() * sizeof(int), &intensity_histogram[0]);
-		cl::Kernel cumHistKernel = cl::Kernel(program, "scan_hs");
+		
+		cl::Kernel cumHistKernel = cl::Kernel(program, "scan_add");
 		cumHistKernel.setArg(0, dev_intensity_histogram);
 		cumHistKernel.setArg(1, dev_cumulative_histogram);
+		cumHistKernel.setArg(2, cl::Local(intensity_histogram.size() * sizeof(int)));
+		cumHistKernel.setArg(3, cl::Local(intensity_histogram.size() * sizeof(int)));
+		//kernel_1.setArg(2, cl::Local(local_size*sizeof(mytype)));//local memory size
 		
-		queue.enqueueNDRangeKernel(cumHistKernel, cl::NullRange, cl::NDRange(intensity_histogram.size()), cl::NullRange);
-
+		
+		queue.enqueueNDRangeKernel(cumHistKernel, cl::NullRange, cl::NDRange(intensity_histogram.size()), 256);
 		queue.enqueueReadBuffer(dev_cumulative_histogram, CL_TRUE, 0, cumulative_histogram.size() * sizeof(int), &cumulative_histogram[0]);
 
 		std::cout << cumulative_histogram << std::endl;
+		// TODO: normalise buffer
 
-		//cl::Kernel kernel_identityND(program, "avg_filterND");
-		//kernel_identityND.setArg(0, dev_image_input);
-		//kernel_identityND.setArg(1, dev_image_output);
-		//queue.enqueueNDRangeKernel(kernel_identityND, cl::NullRange, cl::NDRange(image_input.width(), image_input.height(), image_input.spectrum()), cl::NullRange);
+		int max = cumulative_histogram[cumulative_histogram.size() - 1];
+		std::cout << max << std::endl;
 
+		cl::Buffer dev_divideby(context, CL_MEM_READ_WRITE, sizeof(int));
+		cl::Buffer dev_normalised_histogram(context, CL_MEM_READ_WRITE, cumulative_histogram.size() * sizeof(int));
+		queue.enqueueWriteBuffer(dev_divideby, CL_TRUE, 0, sizeof(int), &max);
+
+		cl::Kernel normalise = cl::Kernel(program, "divide");
+		normalise.setArg(0, dev_cumulative_histogram);
+		normalise.setArg(1, dev_normalised_histogram);
+		normalise.setArg(2, dev_divideby);
+		
+		queue.enqueueNDRangeKernel(normalise, cl::NullRange, cl::NDRange(cumulative_histogram.size()), 256);
+
+		queue.enqueueReadBuffer(dev_normalised_histogram, CL_TRUE, 0, cumulative_histogram.size() * sizeof(int), &normalised_histogram[0]);
+		std::cout << normalised_histogram << std::endl;
+		
+		// TODO: back-projection
 
 		vector<unsigned char> output_buffer(image_input.size());
 		//4.3 Copy the result from device to host
