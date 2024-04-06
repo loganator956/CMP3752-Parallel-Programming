@@ -99,8 +99,13 @@ kernel void reduce_add_4(global const int* A, global int* B, local int* scratch)
 kernel void hist_simple(global const int* A, global int* H) { 
 	int id = get_global_id(0);
 
+	int nr_bins = 10;
+
 	//assumes that H has been initialised to 0
 	int bin_index = A[id];//take value as a bin index
+	if (bin_index >= nr_bins) {
+		bin_index = nr_bins - 1;
+	}
 
 	atomic_inc(&H[bin_index]);//serial operation, not very efficient!
 }
