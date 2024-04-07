@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 		std::cout << "Running on " << GetPlatformName(platform_id) << ", " << GetDeviceName(platform_id, device_id) << std::endl;
 
 		//create a queue to which we will push commands for the device
-		cl::CommandQueue queue(context);
+		cl::CommandQueue queue(context, CL_QUEUE_PROFILING_ENABLE);
 
 		//3.2 Load & build the device code
 		cl::Program::Sources sources;
@@ -70,16 +70,7 @@ int main(int argc, char** argv) {
 			throw err;
 		}
 
-		//Part 4 - device operations
-
-		std::vector<int> cumulative_histogram(256 * image_input.spectrum(), 0);
-		std::vector<int> normalised_histogram(256 * image_input.spectrum(), 0);
-		std::vector<int> max_hist(256 * image_input.spectrum(), 0);
-
 		//device - buffers
-		cl::Buffer dev_cumulative_histogram(context, CL_MEM_READ_WRITE, cumulative_histogram.size() * sizeof(int));
-		cl::Buffer dev_max_histogram(context, CL_MEM_READ_WRITE, max_hist.size() * sizeof(int));
-
 		cl::Buffer dev_image_input(context, CL_MEM_READ_ONLY, image_input.size());
 		cl::Buffer dev_image_output(context, CL_MEM_READ_WRITE, image_input.size()); //should be the same as input image
 
@@ -88,6 +79,11 @@ int main(int argc, char** argv) {
 
 		//  STEP 1 :: Generate Intensity Histogram
 		//		buffers
+		std::vector<int> cumulative_histogram(256 * image_input.spectrum(), 0);
+		std::vector<int> normalised_histogram(256 * image_input.spectrum(), 0);
+		std::vector<int> max_hist(256 * image_input.spectrum(), 0);
+		cl::Buffer dev_cumulative_histogram(context, CL_MEM_READ_WRITE, cumulative_histogram.size() * sizeof(int));
+		cl::Buffer dev_max_histogram(context, CL_MEM_READ_WRITE, max_hist.size() * sizeof(int));
 		std::vector<int> intensity_histogram(256 * image_input.spectrum(), 0);
 		cl::Buffer dev_intensity_histogram(context, CL_MEM_READ_WRITE, intensity_histogram.size() * sizeof(int));
 		//		kernel
@@ -107,7 +103,8 @@ int main(int argc, char** argv) {
 		cumulativeHistKernel.setArg(1, dev_cumulative_histogram);
 		cumulativeHistKernel.setArg(2, cl::Local(intensity_histogram.size() * sizeof(int)));
 		cumulativeHistKernel.setArg(3, cl::Local(intensity_histogram.size() * sizeof(int)));
-		
+		//		run kernel once for each colour channel (eg: once for greyscale or 3 times for rgb).
+		//		works out offset and size (only works for 256 colour values)
 		for (int i = 0; i < image_input.spectrum(); i++)
 			queue.enqueueNDRangeKernel(cumulativeHistKernel, cl::NDRange(256 * i), cl::NDRange(256));
 		//  STEP 3 :: Normalise histogram
@@ -130,11 +127,6 @@ int main(int argc, char** argv) {
 		normalise.setArg(1, dev_normalised_histogram);
 		normalise.setArg(2, dev_divideby);
 		queue.enqueueNDRangeKernel(normalise, cl::NullRange, cl::NDRange(cumulative_histogram.size()));
-
-		//queue.enqueueReadBuffer(dev_normalised_histogram, CL_TRUE, 0, cumulative_histogram.size() * sizeof(int), &normalised_histogram[0]);
-		//std::cout << normalised_histogram << std::endl;
-		
-		// TODO: back-projection
 
 		//  STEP 4 :: Back-projection using lut
 

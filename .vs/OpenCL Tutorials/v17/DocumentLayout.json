@@ -9,6 +9,10 @@
     {
       "AbsoluteMoniker": "D:0:0:{BFAAAEF5-CF4D-475E-9252-21CF582BA724}|Tutorial 2\\Tutorial 2.vcxproj|C:\\Users\\logan\\source\\repos\\CMP3752-Parallel-Programming\\Tutorial 2\\kernels\\kernels.cl||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{BFAAAEF5-CF4D-475E-9252-21CF582BA724}|Tutorial 2\\Tutorial 2.vcxproj|solutionrelative:Tutorial 2\\kernels\\kernels.cl||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0F94CDBF-1CAA-4A30-8517-489F510AEB06}|Tutorial 1\\Tutorial 1.vcxproj|C:\\Users\\logan\\source\\repos\\CMP3752-Parallel-Programming\\Tutorial 1\\Tutorial 1.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{0F94CDBF-1CAA-4A30-8517-489F510AEB06}|Tutorial 1\\Tutorial 1.vcxproj|solutionrelative:Tutorial 1\\Tutorial 1.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,8 +22,21 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 2,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Tutorial 1.cpp",
+              "DocumentMoniker": "C:\\Users\\logan\\source\\repos\\CMP3752-Parallel-Programming\\Tutorial 1\\Tutorial 1.cpp",
+              "RelativeDocumentMoniker": "Tutorial 1\\Tutorial 1.cpp",
+              "ToolTip": "C:\\Users\\logan\\source\\repos\\CMP3752-Parallel-Programming\\Tutorial 1\\Tutorial 1.cpp",
+              "RelativeToolTip": "Tutorial 1\\Tutorial 1.cpp",
+              "ViewState": "AQIAAB4AAAAAAAAAAAAAACYAAAA7AAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2024-04-07T11:58:17.284Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Document",
               "DocumentIndex": 1,
@@ -41,7 +58,7 @@
               "RelativeDocumentMoniker": "Tutorial 2\\Tutorial 2.cpp",
               "ToolTip": "C:\\Users\\logan\\source\\repos\\CMP3752-Parallel-Programming\\Tutorial 2\\Tutorial 2.cpp",
               "RelativeToolTip": "Tutorial 2\\Tutorial 2.cpp",
-              "ViewState": "AQIAAIEAAAAAAAAAAAAAAJQAAAAAAAAA",
+              "ViewState": "AQIAADkAAAAAAAAAAAAAAIwAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2024-04-06T14:12:07.472Z",
               "EditorCaption": ""
