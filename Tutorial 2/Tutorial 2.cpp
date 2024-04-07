@@ -145,6 +145,15 @@ int main(int argc, char** argv) {
 		
 		// TODO: back-projection
 
+		cl::Buffer dev_projected(context, CL_MEM_READ_WRITE, image_input.size());
+
+		cl::Kernel backprojection = cl::Kernel(program, "project");
+		backprojection.setArg(0, dev_image_input);
+		backprojection.setArg(1, dev_normalised_histogram);
+		backprojection.setArg(2, dev_image_output);
+		
+		queue.enqueueNDRangeKernel(backprojection, cl::NullRange, cl::NDRange(image_input.size()), cl::NullRange);
+
 		vector<unsigned char> output_buffer(image_input.size());
 		//4.3 Copy the result from device to host
 		queue.enqueueReadBuffer(dev_image_output, CL_TRUE, 0, output_buffer.size(), &output_buffer.data()[0]);

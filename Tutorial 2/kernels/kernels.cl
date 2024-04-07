@@ -178,6 +178,16 @@ kernel void reduce_max(global const int* A, global int* B) {
 	}
 }
 
+kernel void project(global const uchar* A, global const int* B, global uchar* C) {
+	// A is input image
+	// B is lut
+	// C is new intensity value
+	int id = get_global_id(0);
+	
+	int nid = A[id];
+	C[id] = B[nid];
+}
+
 kernel void divide(global const int* A, global int* B, global int* C) {
 	int id = get_global_id(0);
 	int c = *C;
