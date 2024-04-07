@@ -130,35 +130,8 @@ kernel void histogram255(global const uchar* A, global int* C) {
 	C[(c * 256) + v]++;
 }
 
-kernel void histogram_cumulative(global const int* A, global int* B) {
-	int id = get_global_id(0);
-	// TODO: possibly add that scan method that stores the progress variaables in here
-
-}
-
-//Hillis-Steele basic inclusive scan
-//requires additional buffer B to avoid data overwrite 
-kernel void scan_hs(global int* A, global int* B) {
-	int id = get_global_id(0);
-	int N = get_global_size(0);
-	global int* C;
-
-	for (int stride = 1; stride < N; stride *= 2) {
-		B[id] = A[id];
-		if (id >= stride)
-			B[id] += A[id - stride];
-
-		barrier(CLK_GLOBAL_MEM_FENCE); //sync the step
-
-		C = A; A = B; B = C; //swap A & B between steps
-	}
-}
-
-kernel void scan_max(global const int* A, global int* B) {
-	
-}
-
 //flexible step reduce 
+// FUNCTION FROM WORKSHOP CODE BUT MODIFIED
 kernel void reduce_max(global const int* A, global int* B) {
 	int id = get_global_id(0);
 	int N = get_global_size(0);
@@ -204,6 +177,8 @@ kernel void divide(global const int* A, global int* B, global int* C) {
 	//B[id] = C
 }
 
+
+// FUNCTION FROM WORKSHOP CODE
 //a double-buffered version of the Hillis-Steele inclusive scan
 //requires two additional input arguments which correspond to two local buffers
 kernel void scan_add(__global const int* A, global int* B, local int* scratch_1, local int* scratch_2) {

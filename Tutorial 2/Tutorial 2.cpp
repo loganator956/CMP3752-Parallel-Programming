@@ -3,6 +3,7 @@
 
 #include "Utils.h"
 #include "CImg.h"
+#include <CL/opencl.hpp>
 
 using namespace cimg_library;
 
@@ -76,6 +77,7 @@ int main(int argc, char** argv) {
 
 				//4.1 Copy images to device memory
 		queue.enqueueWriteBuffer(dev_image_input, CL_TRUE, 0, image_input.size(), &image_input.data()[0]);
+		
 
 		//  STEP 1 :: Generate Intensity Histogram
 		//		buffers
@@ -90,13 +92,15 @@ int main(int argc, char** argv) {
 		cl::Kernel ihistKernel = cl::Kernel(program, "histogram255");
 		ihistKernel.setArg(0, dev_image_input);
 		ihistKernel.setArg(1, dev_intensity_histogram);
-		queue.enqueueNDRangeKernel(ihistKernel, cl::NullRange, cl::NDRange(image_input.width(), image_input.height(), image_input.spectrum()), cl::NullRange);
+		cl::Event profile_event;
+		queue.enqueueNDRangeKernel(ihistKernel, cl::NullRange, cl::NDRange(image_input.width(), image_input.height(), image_input.spectrum()), cl::NullRange, NULL, &profile_event);
 		//		read
-		queue.enqueueReadBuffer(dev_intensity_histogram, CL_TRUE, 0, intensity_histogram.size() * sizeof(int), &intensity_histogram[0]);
-		std::cout << intensity_histogram << std::endl;
+		std::cout << "Intensity histogram complete" << std::endl;
+		clFinish(queue.get());
+		std::cout << "Kernel execution time [ns]: " << profile_event.getProfilingInfo<CL_PROFILING_COMMAND_END>() - profile_event.getProfilingInfo<CL_PROFILING_COMMAND_START>() << std::endl;
+		std::cout << GetFullProfilingInfo(profile_event, ProfilingResolution::PROF_US) << std::endl;
 
 		//  STEP 2 :: Calculate cumulative histogram
-		queue.enqueueWriteBuffer(dev_intensity_histogram, CL_TRUE, 0, intensity_histogram.size() * sizeof(int), &intensity_histogram[0]);
 		
 		cl::Kernel cumulativeHistKernel = cl::Kernel(program, "scan_add");
 		cumulativeHistKernel.setArg(0, dev_intensity_histogram);
@@ -106,7 +110,15 @@ int main(int argc, char** argv) {
 		//		run kernel once for each colour channel (eg: once for greyscale or 3 times for rgb).
 		//		works out offset and size (only works for 256 colour values)
 		for (int i = 0; i < image_input.spectrum(); i++)
-			queue.enqueueNDRangeKernel(cumulativeHistKernel, cl::NDRange(256 * i), cl::NDRange(256));
+		{
+			queue.enqueueNDRangeKernel(cumulativeHistKernel, cl::NDRange(256 * i), cl::NDRange(256), cl::NullRange, NULL, &profile_event);
+			std::cout << "Cumulative Histogram " << i << std::endl;
+			clFinish(queue.get());
+			std::cout << "Kernel execution time [ns]: " << profile_event.getProfilingInfo<CL_PROFILING_COMMAND_END>() - profile_event.getProfilingInfo<CL_PROFILING_COMMAND_START>() << std::endl;
+			std::cout << GetFullProfilingInfo(profile_event, ProfilingResolution::PROF_US) << std::endl;
+		}
+
+		std::cout << "Cumulative Histogram Complete" << std::endl;
 		//  STEP 3 :: Normalise histogram
 		//		find max
 		queue.enqueueReadBuffer(dev_cumulative_histogram, CL_TRUE, 0, cumulative_histogram.size() * sizeof(int), &cumulative_histogram[0]);
@@ -126,7 +138,11 @@ int main(int argc, char** argv) {
 		normalise.setArg(0, dev_cumulative_histogram);
 		normalise.setArg(1, dev_normalised_histogram);
 		normalise.setArg(2, dev_divideby);
-		queue.enqueueNDRangeKernel(normalise, cl::NullRange, cl::NDRange(cumulative_histogram.size()));
+		queue.enqueueNDRangeKernel(normalise, cl::NullRange, cl::NDRange(cumulative_histogram.size()), cl::NullRange, NULL, &profile_event);
+		std::cout << "Normalised Histogram" << std::endl;
+		clFinish(queue.get());
+		std::cout << "Kernel execution time [ns]: " << profile_event.getProfilingInfo<CL_PROFILING_COMMAND_END>() - profile_event.getProfilingInfo<CL_PROFILING_COMMAND_START>() << std::endl;
+		std::cout << GetFullProfilingInfo(profile_event, ProfilingResolution::PROF_US) << std::endl;
 
 		//  STEP 4 :: Back-projection using lut
 
@@ -135,11 +151,11 @@ int main(int argc, char** argv) {
 		backprojection.setArg(1, dev_normalised_histogram);
 		backprojection.setArg(2, dev_image_output);
 		
-		queue.enqueueNDRangeKernel(backprojection, cl::NullRange, cl::NDRange(image_input.width(), image_input.height(), image_input.spectrum()), cl::NullRange);
-
-
-
-
+		queue.enqueueNDRangeKernel(backprojection, cl::NullRange, cl::NDRange(image_input.width(), image_input.height(), image_input.spectrum()), cl::NullRange, NULL, &profile_event);
+		std::cout << "Back-projection Complete" << std::endl;
+		clFinish(queue.get());
+		std::cout << "Kernel execution time [ns]: " << profile_event.getProfilingInfo<CL_PROFILING_COMMAND_END>() - profile_event.getProfilingInfo<CL_PROFILING_COMMAND_START>() << std::endl;
+		std::cout << GetFullProfilingInfo(profile_event, ProfilingResolution::PROF_US) << std::endl;
 
 		vector<unsigned char> output_buffer(image_input.size());
 		//4.3 Copy the result from device to host
