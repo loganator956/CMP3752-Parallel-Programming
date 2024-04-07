@@ -72,87 +72,82 @@ int main(int argc, char** argv) {
 
 		//Part 4 - device operations
 
-		std::vector<int> intensity_histogram(256 * image_input.spectrum(), 0);
 		std::vector<int> cumulative_histogram(256 * image_input.spectrum(), 0);
 		std::vector<int> normalised_histogram(256 * image_input.spectrum(), 0);
 		std::vector<int> max_hist(256 * image_input.spectrum(), 0);
 
 		//device - buffers
-		cl::Buffer dev_intensity_histogram(context, CL_MEM_READ_WRITE, intensity_histogram.size() * sizeof(int));
 		cl::Buffer dev_cumulative_histogram(context, CL_MEM_READ_WRITE, cumulative_histogram.size() * sizeof(int));
 		cl::Buffer dev_max_histogram(context, CL_MEM_READ_WRITE, max_hist.size() * sizeof(int));
 
 		cl::Buffer dev_image_input(context, CL_MEM_READ_ONLY, image_input.size());
 		cl::Buffer dev_image_output(context, CL_MEM_READ_WRITE, image_input.size()); //should be the same as input image
-		cl::Buffer dev_convolution_mask(context, CL_MEM_READ_ONLY, convolution_mask.size()*sizeof(float));
 
 				//4.1 Copy images to device memory
 		queue.enqueueWriteBuffer(dev_image_input, CL_TRUE, 0, image_input.size(), &image_input.data()[0]);
-		queue.enqueueWriteBuffer(dev_convolution_mask, CL_TRUE, 0, convolution_mask.size()*sizeof(float), &convolution_mask[0]);
 
-				//4.2 Setup and execute the kernel (i.e. device code)
-		cl::Kernel kernel = cl::Kernel(program, "convolutionND");
-		kernel.setArg(0, dev_image_input);
-		kernel.setArg(1, dev_image_output);
-		kernel.setArg(2, dev_convolution_mask);
-
-		queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(image_input.size()), cl::NullRange);
-
-		// Generate intensity histogram
+		//  STEP 1 :: Generate Intensity Histogram
+		//		buffers
+		std::vector<int> intensity_histogram(256 * image_input.spectrum(), 0);
+		cl::Buffer dev_intensity_histogram(context, CL_MEM_READ_WRITE, intensity_histogram.size() * sizeof(int));
+		//		kernel
 		cl::Kernel ihistKernel = cl::Kernel(program, "histogram255");
 		ihistKernel.setArg(0, dev_image_input);
 		ihistKernel.setArg(1, dev_intensity_histogram);
-
 		queue.enqueueNDRangeKernel(ihistKernel, cl::NullRange, cl::NDRange(image_input.width(), image_input.height(), image_input.spectrum()), cl::NullRange);
-
+		//		read
 		queue.enqueueReadBuffer(dev_intensity_histogram, CL_TRUE, 0, intensity_histogram.size() * sizeof(int), &intensity_histogram[0]);
 		std::cout << intensity_histogram << std::endl;
 
-		// Calculate the cumulative histogram. 
-		// use hillis steele scan method as that stores the partial data.
+		//  STEP 2 :: Calculate cumulative histogram
 		queue.enqueueWriteBuffer(dev_intensity_histogram, CL_TRUE, 0, intensity_histogram.size() * sizeof(int), &intensity_histogram[0]);
 		
-		cl::Kernel cumHistKernel = cl::Kernel(program, "scan_add");
-		cumHistKernel.setArg(0, dev_intensity_histogram);
-		cumHistKernel.setArg(1, dev_cumulative_histogram);
-		cumHistKernel.setArg(2, cl::Local(intensity_histogram.size() * sizeof(int)));
-		cumHistKernel.setArg(3, cl::Local(intensity_histogram.size() * sizeof(int)));
-		//kernel_1.setArg(2, cl::Local(local_size*sizeof(mytype)));//local memory size
+		cl::Kernel cumulativeHistKernel = cl::Kernel(program, "scan_add");
+		cumulativeHistKernel.setArg(0, dev_intensity_histogram);
+		cumulativeHistKernel.setArg(1, dev_cumulative_histogram);
+		cumulativeHistKernel.setArg(2, cl::Local(intensity_histogram.size() * sizeof(int)));
+		cumulativeHistKernel.setArg(3, cl::Local(intensity_histogram.size() * sizeof(int)));
 		
-		
-		queue.enqueueNDRangeKernel(cumHistKernel, cl::NullRange, cl::NDRange(intensity_histogram.size()), 256);
+		for (int i = 0; i < image_input.spectrum(); i++)
+			queue.enqueueNDRangeKernel(cumulativeHistKernel, cl::NDRange(256 * i), cl::NDRange(256));
+		//  STEP 3 :: Normalise histogram
+		//		find max
 		queue.enqueueReadBuffer(dev_cumulative_histogram, CL_TRUE, 0, cumulative_histogram.size() * sizeof(int), &cumulative_histogram[0]);
-
-		std::cout << cumulative_histogram << std::endl;
-		// TODO: normalise buffer
-
 		int max = cumulative_histogram[cumulative_histogram.size() - 1];
-		std::cout << max << std::endl;
-
+		for (int i = 0; i < image_input.spectrum(); i++)
+		{
+			int v = cumulative_histogram[(256 * (i + 1)) - 1];
+			if (v > max)
+				max = v;
+		}
+		//		devices
 		cl::Buffer dev_divideby(context, CL_MEM_READ_WRITE, sizeof(int));
 		cl::Buffer dev_normalised_histogram(context, CL_MEM_READ_WRITE, cumulative_histogram.size() * sizeof(int));
 		queue.enqueueWriteBuffer(dev_divideby, CL_TRUE, 0, sizeof(int), &max);
-
+		//		kernel
 		cl::Kernel normalise = cl::Kernel(program, "divide");
 		normalise.setArg(0, dev_cumulative_histogram);
 		normalise.setArg(1, dev_normalised_histogram);
 		normalise.setArg(2, dev_divideby);
-		
-		queue.enqueueNDRangeKernel(normalise, cl::NullRange, cl::NDRange(cumulative_histogram.size()), 256);
+		queue.enqueueNDRangeKernel(normalise, cl::NullRange, cl::NDRange(cumulative_histogram.size()));
 
-		queue.enqueueReadBuffer(dev_normalised_histogram, CL_TRUE, 0, cumulative_histogram.size() * sizeof(int), &normalised_histogram[0]);
-		std::cout << normalised_histogram << std::endl;
+		//queue.enqueueReadBuffer(dev_normalised_histogram, CL_TRUE, 0, cumulative_histogram.size() * sizeof(int), &normalised_histogram[0]);
+		//std::cout << normalised_histogram << std::endl;
 		
 		// TODO: back-projection
 
-		cl::Buffer dev_projected(context, CL_MEM_READ_WRITE, image_input.size());
+		//  STEP 4 :: Back-projection using lut
 
 		cl::Kernel backprojection = cl::Kernel(program, "project");
 		backprojection.setArg(0, dev_image_input);
 		backprojection.setArg(1, dev_normalised_histogram);
 		backprojection.setArg(2, dev_image_output);
 		
-		queue.enqueueNDRangeKernel(backprojection, cl::NullRange, cl::NDRange(image_input.size()), cl::NullRange);
+		queue.enqueueNDRangeKernel(backprojection, cl::NullRange, cl::NDRange(image_input.width(), image_input.height(), image_input.spectrum()), cl::NullRange);
+
+
+
+
 
 		vector<unsigned char> output_buffer(image_input.size());
 		//4.3 Copy the result from device to host
